@@ -1,0 +1,5 @@
+{
+  "name": "OBD2 Pre-Purchase Inspection Agent",
+  "description": "A Python-based OBD2 diagnostic tool architecture for Raspberry Pi to detect hidden vehicle issues.",
+  "requestFramePermissions": []
+}

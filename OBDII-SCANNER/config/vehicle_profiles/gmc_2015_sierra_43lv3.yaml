@@ -1,0 +1,155 @@
+# =====================================================================
+# 2015 GMC Sierra 1500 - 4.3L LV3 V6
+# GMT K2XX light-duty platform, GMLAN / GM Global-B (11-bit ISO 15765)
+# =====================================================================
+#
+# !!  SAFETY NOTICE  !!
+#
+# This file is the SINGLE source of truth for UDS / bidirectional
+# commands that may be sent to a real vehicle.  Every entry starts
+# DISABLED (enabled: false) until its Data Identifier (DID) or
+# Routine Identifier (RID) has been verified against an authoritative
+# GM service manual for this specific vehicle.  The loader refuses to
+# run any command whose `enabled` OR `verified` flag is false.
+#
+# DO NOT flip `enabled: true` or `verified: true` on any entry unless
+# you have cross-referenced the DID/RID against the GM Global-B FSM
+# or equivalent documentation.  Invented DIDs can put the PCM into
+# unexpected states.
+#
+# The module request/response IDs below ARE standardised for ISO 15765
+# on K2XX trucks (7E0/7E8 for the PCM and 7E1/7E9 for the TCM).  The
+# chassis / body module IDs are from OEM service data and are only
+# used as ATSH targets - they are not inferred.
+#
+# Safety levels:
+#   SAFE    - observation only, or actuator that cannot affect drive.
+#   CAUTION - actuator with driveline or fire implications.
+#   DANGER  - actuator that can injure a bystander or damage hardware
+#             if mis-targeted.  Requires separate confirmation.
+#
+# =====================================================================
+
+oem: gmc_2015_sierra_43lv3
+name: "2015 GMC Sierra 1500 4.3L LV3 V6"
+
+# Informational VIN prefix hint - the real match is done by
+# src/core/safety_gate.py which checks WMI + engine code + year code.
+vin_prefix: "?GT?????H?F"
+
+modules:
+  PCM:
+    request:  0x7E0
+    response: 0x7E8
+    description: "Powertrain Control Module (4.3L LV3 engine + trans)"
+  TCM:
+    request:  0x7E1
+    response: 0x7E9
+    description: "Transmission Control Module (6L80 shared bus)"
+  EBCM:
+    request:  0x7E4
+    response: 0x7EC
+    description: "Electronic Brake Control Module (ABS)"
+  BCM:
+    request:  0x7E6
+    response: 0x7EE
+    description: "Body Control Module"
+  IPC:
+    request:  0x7E3
+    response: 0x7EB
+    description: "Instrument Panel Cluster"
+
+# ---------------------------------------------------------------------
+# Bidirectional command templates.
+#
+# ALL entries below are structural scaffolding only.  Every single
+# one is disabled and marked verified=false.  They exist so the UI,
+# simulator, capability prober, and audit logs exercise the same code
+# paths and YAML schema the production profile will eventually use.
+#
+# To enable any of these against a real truck you must:
+#   1. Look up the true DID (for 0x2F) or RID (for 0x31) in an
+#      authoritative GM Global-B service manual or FSM for this VIN.
+#   2. Replace the placeholder DID/RID.
+#   3. Set `verified: true` AND `enabled: true`.
+#   4. Re-test in simulator mode first (OBD2_SIMULATOR=1).
+#
+# Placeholder DIDs are deliberately set to 0xFFFF so a simulator
+# sandbox can exercise the frame builder, and a real ECU will reject
+# them with NRC 0x31 (Request Out Of Range) without side effects.
+# ---------------------------------------------------------------------
+bidirectional:
+
+  # ---------------- SAFE READS (0x22 ReadDataByIdentifier) -----------
+  - name: Read_VIN_From_PCM
+    description: "Read the 17-character VIN from the PCM."
+    module: PCM
+    service: 0x22
+    did: 0xF190       # ISO 14229 standard VIN DID
+    safety_level: SAFE
+    enabled: false
+    verified: false
+    notes: "Standard ISO DID; enable once bench-tested against real PCM."
+
+  - name: Read_ECU_Software_Number
+    description: "Read the PCM software part number."
+    module: PCM
+    service: 0x22
+    did: 0xF188       # ISO 14229 standard software identification DID
+    safety_level: SAFE
+    enabled: false
+    verified: false
+    notes: "Standard ISO DID; verify against GM FSM before enabling."
+
+  # ---------------- ACTUATOR CONTROL (0x2F InputOutputControl) -------
+  # IOControlParameter values:
+  #   0x00 returnControlToECU
+  #   0x01 resetToDefault
+  #   0x02 freezeCurrentState
+  #   0x03 shortTermAdjustment
+  #
+  # These entries are template-only.  Until the DID column is filled
+  # in with an authoritative value, the BidirectionalController will
+  # refuse to transmit them and the simulator will return NRC 0x31.
+
+  - name: EVAP_Purge_Solenoid_Command
+    description: "Command the EVAP purge solenoid duty cycle."
+    module: PCM
+    service: 0x2F
+    did: 0xFFFF        # PLACEHOLDER - replace with verified DID.
+    control: 0x03      # shortTermAdjustment
+    states: [0x32]     # placeholder 50% duty
+    safety_level: CAUTION
+    enabled: false
+    verified: false
+    notes: "TODO: obtain verified DID for 2015 4.3L LV3 PCM."
+
+  - name: Cooling_Fan_Request
+    description: "Command the cooling fan to a speed."
+    module: PCM
+    service: 0x2F
+    did: 0xFFFF        # PLACEHOLDER
+    control: 0x03
+    states: [0x00]
+    safety_level: CAUTION
+    enabled: false
+    verified: false
+    notes: "TODO: 4.3L LV3 LV3 PCM uses single-speed PWM on this chassis."
+
+  # ---------------- ROUTINE CONTROL (0x31) ---------------------------
+  # routineControlType:
+  #   0x01 startRoutine
+  #   0x02 stopRoutine
+  #   0x03 requestRoutineResults
+
+  - name: EVAP_Leak_Test_Routine
+    description: "Start the on-board EVAP leak detection routine."
+    module: PCM
+    service: 0x31
+    subfunction: 0x01   # startRoutine
+    rid: 0xFFFF         # PLACEHOLDER
+    data: []
+    safety_level: CAUTION
+    enabled: false
+    verified: false
+    notes: "TODO: verify RID from GM FSM; engine-off, fuel tank >25%."

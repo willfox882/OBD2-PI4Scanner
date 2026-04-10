@@ -1,0 +1,5 @@
+obd>=0.7.1
+pyserial>=3.5
+PyYAML>=6.0
+pandas>=2.0.0
+matplotlib>=3.7.0

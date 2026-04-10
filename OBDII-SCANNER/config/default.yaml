@@ -1,0 +1,20 @@
+connection:
+  port: auto
+  baudrate: 115200
+  timeout: 2.0
+  reconnect_attempts: 3
+  reconnect_delay: 5.0
+
+logging:
+  log_dir: ./logs
+  level: INFO
+  console: false  # Never log to stdout/stderr: it corrupts the curses UI.
+
+polling:
+  default_interval_ms: 100
+  fast_interval_ms: 20
+  slow_interval_ms: 500
+
+ui:
+  theme: dark
+  refresh_rate_hz: 10
